@@ -39,6 +39,21 @@ function isValidDelim(state, pos) {
     };
 }
 
+function isValidBlockDelim(state, pos) {
+    const max = state.posMax;
+
+    const prevChar = state.src[pos - 1];
+    const char = state.src[pos];
+    const nextChar = state.src[pos + 1];
+    const nextCharPlus1 = state.src[pos + 2];
+
+    if (char === '$' && prevChar !== '$' && nextChar === '$' && nextCharPlus1 !== '$') {
+        return { can_open: true, can_close: true };
+    }
+
+    return { can_open: false, can_close: false };
+}
+
 function math_inline(state, silent) {
     var start, match, token, res, pos, esc_count;
 
@@ -157,7 +172,7 @@ function math_inline_block(state, silent) {
 
     if (state.src.slice(state.pos, state.pos + 2) !== "$$") { return false; }
 
-    res = isValidDelim(state, state.pos + 1);
+    res = isValidBlockDelim(state, state.pos);
     if (!res.can_open) {
         if (!silent) { state.pending += "$$"; }
         state.pos += 2;
@@ -196,7 +211,7 @@ function math_inline_block(state, silent) {
     }
 
     // Check for valid closing delimiter
-    res = isValidDelim(state, match + 1);
+    res = isValidBlockDelim(state, match);
     if (!res.can_close) {
         if (!silent) { state.pending += "$$"; }
         state.pos = start;
