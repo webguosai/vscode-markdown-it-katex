@@ -52,7 +52,12 @@ function isValidBlockDelim(state, pos) {
     const nextChar = state.src[pos + 1];
     const nextCharPlus1 = state.src[pos + 2];
 
-    if (char === '$' && prevChar !== '$' && nextChar === '$' && nextCharPlus1 !== '$') {
+    if (
+        char === '$'
+        && prevChar !== '$' && prevChar !== '\\'
+        && nextChar === '$'
+        && nextCharPlus1 !== '$'
+    ) {
         return { can_open: true, can_close: true };
     }
 
