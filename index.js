@@ -12,8 +12,12 @@ for rendering output.
 
 var katex = require('katex');
 
-// Test if potential opening or closing delimieter
-// Assumes that there is a "$" at state.src[pos]
+/**
+ * Test if potential opening or closing delimieter
+ *  Assumes that there is a "$" at state.src[pos]
+ * 
+ * @returns {{ can_open: boolean, can_close: boolean }}
+ */
 function isValidDelim(state, pos) {
     var prevChar, nextChar,
         max = state.posMax,
@@ -39,6 +43,9 @@ function isValidDelim(state, pos) {
     };
 }
 
+/**
+ * @returns {{ can_open: boolean, can_close: boolean }}
+ */
 function isValidBlockDelim(state, pos) {
     const max = state.posMax;
 
