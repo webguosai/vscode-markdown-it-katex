@@ -47,8 +47,6 @@ function isValidDelim(state, pos) {
  * @returns {{ can_open: boolean, can_close: boolean }}
  */
 function isValidBlockDelim(state, pos) {
-    const max = state.posMax;
-
     const prevChar = state.src[pos - 1];
     const char = state.src[pos];
     const nextChar = state.src[pos + 1];
