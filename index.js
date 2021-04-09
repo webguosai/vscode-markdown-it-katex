@@ -14,33 +14,49 @@ var katex = require('katex');
 
 /**
  * Test if potential opening or closing delimieter
- *  Assumes that there is a "$" at state.src[pos]
  * 
  * @returns {{ can_open: boolean, can_close: boolean }}
  */
-function isValidDelim(state, pos) {
-    var prevChar, nextChar,
-        max = state.posMax,
-        can_open = true,
-        can_close = true;
+function isValidInlineDelim(state, pos) {
+    const prevChar = state.src[pos - 1];
+    const char = state.src[pos];
+    const nextChar = state.src[pos + 1];
 
-    prevChar = pos > 0 ? state.src.charCodeAt(pos - 1) : -1;
-    nextChar = pos + 1 <= max ? state.src.charCodeAt(pos + 1) : -1;
-
-    // Check non-whitespace conditions for opening and closing, and
-    // check that closing delimeter isn't followed by a number
-    if (prevChar === 0x20/* " " */ || prevChar === 0x09/* \t */ ||
-        (nextChar >= 0x30/* "0" */ && nextChar <= 0x39/* "9" */)) {
-        can_close = false;
-    }
-    if (nextChar === 0x20/* " " */ || nextChar === 0x09/* \t */) {
-        can_open = false;
+    if (char !== '$') {
+        return { can_open: false, can_close: false };
     }
 
-    return {
-        can_open: can_open,
-        can_close: can_close
-    };
+    let canOpen = false;
+    let canClose = false;
+    if (prevChar !== '$' && prevChar !== '\\' && (
+        prevChar === undefined || isWhitespace(prevChar) || !isWordCharacterOrNumber(prevChar)
+    )) {
+        canOpen = true;
+    }
+
+    if (nextChar !== '$' && (
+        nextChar == undefined || isWhitespace(nextChar) || !isWordCharacterOrNumber(nextChar))
+    ) {
+        canClose = true;
+    }
+
+    return { can_open: canOpen, can_close: canClose };
+}
+
+/**
+ * @param {string} char 
+ * @returns {boolean}
+ */
+function isWhitespace(char) {
+    return /^\s$/u.test(char);
+}
+
+/**
+ * @param {string} char 
+ * @returns {boolean}
+ */
+function isWordCharacterOrNumber(char) {
+    return /^[\w\d]$/u.test(char);
 }
 
 /**
@@ -69,7 +85,7 @@ function math_inline(state, silent) {
 
     if (state.src[state.pos] !== "$") { return false; }
 
-    res = isValidDelim(state, state.pos);
+    res = isValidInlineDelim(state, state.pos);
     if (!res.can_open) {
         if (!silent) { state.pending += "$"; }
         state.pos += 1;
@@ -108,7 +124,7 @@ function math_inline(state, silent) {
     }
 
     // Check for valid closing delimiter
-    res = isValidDelim(state, match);
+    res = isValidInlineDelim(state, match);
     if (!res.can_close) {
         if (!silent) { state.pending += "$"; }
         state.pos = start;
