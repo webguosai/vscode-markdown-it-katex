@@ -274,10 +274,9 @@ module.exports = function math_plugin(md, options) {
         const displayMode = /\n/.test(latex);
         try {
             return katex.renderToString(latex, { ...options, displayMode });
-        }
-        catch (error) {
+        } catch (error) {
             if (options.throwOnError) { console.log(error); }
-            return `<span class='katex-error' title='${escapeHtml(error.toString())}'>${escapeHtml(latex)}</span>`;
+            return `<span class="katex-error" title="${escapeHtml(latex)}">${escapeHtml(error.toString())}</span>`;
         }
     };
 
@@ -287,11 +286,10 @@ module.exports = function math_plugin(md, options) {
 
     var katexBlock = function (latex) {
         try {
-            return "<p class='katex-block'>" + katex.renderToString(latex, { ...options, displayMode: true }) + "</p>";
-        }
-        catch (error) {
+            return `<p class="katex-block">${katex.renderToString(latex, { ...options, displayMode: true })}</p>`;
+        } catch (error) {
             if (options.throwOnError) { console.log(error); }
-            return `<p class='katex-block katex-error' title='${escapeHtml(error.toString())}'>${escapeHtml(latex)}</p>`;
+            return `<p class="katex-block katex-error" title="${escapeHtml(latex)}">${escapeHtml(error.toString())}</p>`;
         }
     }
 
