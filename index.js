@@ -203,6 +203,8 @@ function bare_math_block(state, start, end, silent) {
     const endRe = /^\\end/;
 
     if (!beginRe.test(firstLine)) { return false; }
+    
+    if (silent) { return true; }
 
     let next;
     for (next = start; !found;) {
