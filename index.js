@@ -141,8 +141,8 @@ function math_inline(state, silent) {
     return true;
 }
 
-function math_block(state, start, end, silent) {
-    var firstLine, lastLine, next, lastPos, found = false, token,
+function math_block_dollar(state, start, end, silent) {
+    var lastLine, next, lastPos, found = false, token,
         pos = state.bMarks[start] + state.tShift[start],
         max = state.eMarks[start]
 
@@ -150,7 +150,7 @@ function math_block(state, start, end, silent) {
     if (state.src.slice(pos, pos + 2) !== '$$') { return false; }
 
     pos += 2;
-    firstLine = state.src.slice(pos, max);
+    let firstLine = state.src.slice(pos, max);
 
     if (silent) { return true; }
     if (firstLine.trim().slice(-2) === '$$') {
@@ -178,12 +178,57 @@ function math_block(state, start, end, silent) {
             lastLine = state.src.slice(pos, lastPos);
             found = true;
         }
-
     }
 
     state.line = next + 1;
 
     token = state.push('math_block', 'math', 0);
+    token.block = true;
+    token.content = (firstLine && firstLine.trim() ? firstLine + '\n' : '')
+        + state.getLines(start + 1, next, state.tShift[start], true)
+        + (lastLine && lastLine.trim() ? lastLine : '');
+    token.map = [start, state.line];
+    token.markup = '$$';
+    return true;
+}
+
+function bare_math_block(state, start, end, silent) {
+    var lastLine, found = false,
+        pos = state.bMarks[start] + state.tShift[start],
+        max = state.eMarks[start]
+
+    const firstLine = state.src.slice(pos, max);
+
+    const beginRe = /^\\begin/;
+    const endRe = /^\\end/;
+
+    if (!beginRe.test(firstLine)) { return false; }
+
+    let next;
+    for (next = start; !found;) {
+
+        next++;
+
+        if (next >= end) { break; }
+
+        pos = state.bMarks[next] + state.tShift[next];
+        max = state.eMarks[next];
+
+        if (pos < max && state.tShift[next] < state.blkIndent) {
+            // non-empty line with negative indent should stop the list:
+            break;
+        }
+        const line = state.src.slice(pos, max);
+        if (endRe.test(line)) {
+            const lastPos = max;
+            lastLine = state.src.slice(pos, lastPos);
+            found = true;
+        }
+    }
+
+    state.line = next + 1;
+
+    const token = state.push('math_block', 'math', 0);
     token.block = true;
     token.content = (firstLine && firstLine.trim() ? firstLine + '\n' : '')
         + state.getLines(start + 1, next, state.tShift[start], true)
@@ -269,8 +314,10 @@ module.exports = function math_plugin(md, options) {
 
     options = options || {};
 
+    const enableBareBlocks = options.enableBareBlocks;
+
     // set KaTeX as the renderer for markdown-it-simplemath
-    var katexInline = function (latex) {
+    const katexInline = (latex) => {
         const displayMode = /\n/.test(latex);
         try {
             return katex.renderToString(latex, { ...options, displayMode });
@@ -280,11 +327,11 @@ module.exports = function math_plugin(md, options) {
         }
     };
 
-    var inlineRenderer = function (tokens, idx) {
+    const inlineRenderer = (tokens, idx) => {
         return katexInline(tokens[idx].content);
     };
 
-    var katexBlock = function (latex) {
+    const katexBlockRenderer = (latex) => {
         try {
             return `<p class="katex-block">${katex.renderToString(latex, { ...options, displayMode: true })}</p>`;
         } catch (error) {
@@ -293,13 +340,18 @@ module.exports = function math_plugin(md, options) {
         }
     }
 
-    var blockRenderer = function (tokens, idx) {
-        return katexBlock(tokens[idx].content) + '\n';
+    const blockRenderer = (tokens, idx) => {
+        return katexBlockRenderer(tokens[idx].content) + '\n';
     }
 
     md.inline.ruler.after('escape', 'math_inline', math_inline);
     md.inline.ruler.after('escape', 'math_inline_block', math_inline_block);
-    md.block.ruler.after('blockquote', 'math_block', math_block, {
+    md.block.ruler.after('blockquote', 'math_block', (state, start, end, silent) => {
+        if (enableBareBlocks && bare_math_block(state, start, end, silent)) {
+            return true;
+        }
+        return math_block_dollar(state, start, end, silent);
+    }, {
         alt: ['paragraph', 'reference', 'blockquote', 'list']
     });
     md.renderer.rules.math_inline = inlineRenderer;

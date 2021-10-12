@@ -1,27 +1,45 @@
-var path = require('path'),
-	tape = require('tape'),
-	testLoad = require('markdown-it-testgen').load,
-	mdk = require('../index');
-
-var md = require('markdown-it')()
-	.use(mdk);
+const path = require('path');
+const tape = require('tape');
+const testLoad = require('markdown-it-testgen').load;
+const mdk = require('../index');
 
 /* this uses the markdown-it-testgen module to automatically generate tests
    based on an easy to read text file
  */
-testLoad(path.join(__dirname, 'fixtures/default.txt'), function(data){
-	data.fixtures.forEach(function (fixture){
+testLoad(path.join(__dirname, 'fixtures/default.txt'), function (data) {
+	const md = require('markdown-it')()
+		.use(mdk);
+
+	data.fixtures.forEach(function (fixture) {
 
 		/* generic test definition code using tape */
-		tape(fixture.header, function(t){
+		tape(fixture.header, function (t) {
 			t.plan(1);
 
-			var expected = fixture.second.text,
-				actual = md.render(fixture.first.text);
+			const expected = fixture.second.text;
+			const actual = md.render(fixture.first.text);
 
 			t.equals(actual, expected);
+		});
+	});
+});
 
+testLoad(path.join(__dirname, 'fixtures/bare.txt'), function (data) {
+	const md = require('markdown-it')()
+		.use(mdk, {
+			enableBareBlocks: true
 		});
 
+	data.fixtures.forEach(function (fixture) {
+
+		/* generic test definition code using tape */
+		tape(fixture.header, function (t) {
+			t.plan(1);
+
+			const expected = fixture.second.text;
+			const actual = md.render(fixture.first.text);
+
+			t.equals(actual, expected);
+		});
 	});
 });
