@@ -203,14 +203,13 @@ function bare_math_block(state, start, end, silent) {
     const endRe = /^\\end/;
 
     if (!beginRe.test(firstLine)) { return false; }
-    
+
     if (silent) { return true; }
 
+    let nestingCount = 0;
     let next;
     for (next = start; !found;) {
-
         next++;
-
         if (next >= end) { break; }
 
         pos = state.bMarks[next] + state.tShift[next];
@@ -221,10 +220,15 @@ function bare_math_block(state, start, end, silent) {
             break;
         }
         const line = state.src.slice(pos, max);
-        if (endRe.test(line)) {
-            const lastPos = max;
-            lastLine = state.src.slice(pos, lastPos);
-            found = true;
+        if (beginRe.test(line)) {
+            ++nestingCount;
+        } else if (endRe.test(line)) {
+            --nestingCount;
+            if (nestingCount < 0) {
+                const lastPos = max;
+                lastLine = state.src.slice(pos, lastPos);
+                found = true;
+            }
         }
     }
 
