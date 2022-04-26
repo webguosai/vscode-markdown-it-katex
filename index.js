@@ -178,6 +178,11 @@ function math_block_dollar(state, start, end, silent) {
             lastLine = state.src.slice(pos, lastPos);
             found = true;
         }
+        else if(state.src.slice(pos, max).trim().includes('$$')){
+            lastPos = state.src.slice(0, max).trim().indexOf('$$');
+            lastLine = state.src.slice(pos, lastPos);
+            found = true;
+        }
     }
 
     state.line = next + 1;
