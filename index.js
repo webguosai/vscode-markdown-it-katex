@@ -80,7 +80,7 @@ function isValidBlockDelim(state, pos) {
     return { can_open: false, can_close: false };
 }
 
-function math_inline(state, silent) {
+function inlineMath(state, silent) {
     var start, match, token, res, pos, esc_count;
 
     if (state.src[state.pos] !== "$") { return false; }
@@ -141,7 +141,7 @@ function math_inline(state, silent) {
     return true;
 }
 
-function math_block_dollar(state, start, end, silent) {
+function blockMath(state, start, end, silent) {
     var lastLine, next, lastPos, found = false, token,
         pos = state.bMarks[start] + state.tShift[start],
         max = state.eMarks[start]
@@ -178,7 +178,7 @@ function math_block_dollar(state, start, end, silent) {
             lastLine = state.src.slice(pos, lastPos);
             found = true;
         }
-        else if(state.src.slice(pos, max).trim().includes('$$')){
+        else if (state.src.slice(pos, max).trim().includes('$$')) {
             lastPos = state.src.slice(0, max).trim().indexOf('$$');
             lastLine = state.src.slice(pos, lastPos);
             found = true;
@@ -197,7 +197,7 @@ function math_block_dollar(state, start, end, silent) {
     return true;
 }
 
-function bare_math_block(state, start, end, silent) {
+function blockBareMath(state, start, end, silent) {
     var lastLine, found = false,
         pos = state.bMarks[start] + state.tShift[start],
         max = state.eMarks[start]
@@ -208,6 +208,16 @@ function bare_math_block(state, start, end, silent) {
     const endRe = /^\\end/;
 
     if (!beginRe.test(firstLine)) { return false; }
+
+    if (start > 0) {
+        // Previous line must be blank for bare blocks
+        const previousStart = state.bMarks[start - 1] + state.tShift[start - 1];
+        const previousEnd = state.eMarks[start - 1];
+        const previousLine = state.src.slice(previousStart, previousEnd);
+        if (!/^\s*$/.test(previousLine)) {
+            return false;
+        }
+    }
 
     if (silent) { return true; }
 
@@ -249,7 +259,7 @@ function bare_math_block(state, start, end, silent) {
     return true;
 }
 
-function math_inline_block(state, silent) {
+function inlineMathBlock(state, silent) {
     var start, match, token, res, pos;
 
     if (state.src.slice(state.pos, state.pos + 2) !== "$$") { return false; }
@@ -311,6 +321,49 @@ function math_inline_block(state, silent) {
     return true;
 }
 
+function inlineBareBlock(state, silent) {
+    const text = state.src.slice(state.pos, state.maxPos);
+    if (!/^\n\\begin/.test(text)) { return false; }
+    state.pos += 1;
+
+    if (silent) { return true; }
+
+    const lines = text.split(/\n/g).slice(1);
+    const beginRe = /^\\begin/;
+    const endRe = /^\\end/;
+
+    let nestingCount = 0;
+    let foundLine = undefined;
+    for (var i = 0; i < lines.length; ++i) {
+        const line = lines[i];
+        if (beginRe.test(line)) {
+            ++nestingCount;
+        } else if (endRe.test(line)) {
+            --nestingCount;
+            if (nestingCount <= 0) {
+                foundLine = i;
+                break;
+            }
+        }
+    }
+
+    if (typeof foundLine === 'undefined') {
+        return false;
+    }
+
+    const endIndex = lines.slice(0, foundLine + 1).reduce((p, c) => p + c.length, 0) + foundLine + 1;
+
+    if (!silent) {
+        const token = state.push('math_inline_bare_block', 'math', 0);
+        token.block = true;
+        token.markup = "$$";
+        token.content = text.slice(1, endIndex)
+    }
+
+    state.pos = state.pos + endIndex;
+    return true;
+}
+
 function escapeHtml(unsafe) {
     return unsafe
         .replace(/&/g, "&amp;")
@@ -354,17 +407,23 @@ module.exports = function math_plugin(md, options) {
         return katexBlockRenderer(tokens[idx].content) + '\n';
     }
 
-    md.inline.ruler.after('escape', 'math_inline', math_inline);
-    md.inline.ruler.after('escape', 'math_inline_block', math_inline_block);
+    md.inline.ruler.after('escape', 'math_inline', inlineMath);
+    md.inline.ruler.after('escape', 'math_inline_block', inlineMathBlock);
+    if (enableBareBlocks) {
+        md.inline.ruler.before('text', 'math_inline_bare_block', inlineBareBlock);
+    }
+
     md.block.ruler.after('blockquote', 'math_block', (state, start, end, silent) => {
-        if (enableBareBlocks && bare_math_block(state, start, end, silent)) {
+        if (enableBareBlocks && blockBareMath(state, start, end, silent)) {
             return true;
         }
-        return math_block_dollar(state, start, end, silent);
+        return blockMath(state, start, end, silent);
     }, {
         alt: ['paragraph', 'reference', 'blockquote', 'list']
     });
+
     md.renderer.rules.math_inline = inlineRenderer;
     md.renderer.rules.math_inline_block = blockRenderer;
+    md.renderer.rules.math_inline_bare_block = blockRenderer;
     md.renderer.rules.math_block = blockRenderer;
 };
