@@ -327,9 +327,8 @@ module.exports = function math_plugin(md, options) {
 
     const enableBareBlocks = options.enableBareBlocks;
 
-    // set KaTeX as the renderer for markdown-it-simplemath
     const katexInline = (latex) => {
-        const displayMode = /\n/.test(latex);
+        const displayMode = /\\begin\{(align|equation|gather|cd|alignat)\}/ig.test(latex);
         try {
             return katex.renderToString(latex, { ...options, displayMode });
         } catch (error) {
