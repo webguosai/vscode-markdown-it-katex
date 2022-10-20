@@ -364,6 +364,56 @@ function inlineBareBlock(state, silent) {
     return true;
 }
 
+// For any html block that contains math, replace the html block token with new tokens that separate out
+// the html blocks from the math
+function handleMathInHtml(state, mathType, mathMarkup, mathRegex) {
+    const tokens = state.tokens;
+
+    for (let index = tokens.length - 1; index >= 0; index--) {
+        const currentToken = tokens[index];
+        const newTokens = [];
+
+        if (currentToken.type !== "html_block") {
+            continue;
+        }
+
+        const content = currentToken.content;
+
+        // Process for each math referenced within the html block
+        for (const match of content.matchAll(mathRegex)) {
+            const html_before_math = match.groups.html_before_math;
+            const math = match.groups.math;
+            const html_after_math = match.groups.html_after_math;
+
+            if (html_before_math) {
+                newTokens.push({ ...currentToken, type: "html_block", map: null, content: html_before_math });
+            }
+
+            if (math) {
+                newTokens.push({ 
+                    ...currentToken,
+                    type: mathType,
+                    map: null,
+                    content: math,
+                    markup: mathMarkup,
+                    block: true,
+                    tag: "math",
+                });
+            }
+
+            if (html_after_math) {
+                newTokens.push({ ...currentToken, type: "html_block", map: null, content: html_after_math });
+            }
+        }    
+        
+        // Replace the original html_block token with the newly expanded tokens
+        if (newTokens.length > 0) {
+            tokens.splice(index, 1, ...newTokens);
+        }
+    }    
+    return true;
+}
+
 function escapeHtml(unsafe) {
     return unsafe
         .replace(/&/g, "&amp;")
@@ -379,6 +429,8 @@ module.exports = function math_plugin(md, options) {
     options = options || {};
 
     const enableBareBlocks = options.enableBareBlocks;
+    const enableMathBlockInHtml = options.enableMathBlockInHtml;
+    const enableMathInlineInHtml = options.enableMathInlineInHtml;
 
     const katexInline = (latex) => {
         const displayMode = /\\begin\{(align|equation|gather|cd|alignat)\}/ig.test(latex);
@@ -421,6 +473,24 @@ module.exports = function math_plugin(md, options) {
     }, {
         alt: ['paragraph', 'reference', 'blockquote', 'list']
     });
+
+    // Regex to capture any html prior to math block, the math block (single or multi line), and any html after the math block
+    const math_block_within_html_regex = /(?<html_before_math>[\s\S]*?)\$\$(?<math>[\s\S]+?)\$\$(?<html_after_math>(?:(?!\$\$[\s\S]+?\$\$)[\s\S])*)/gm;
+
+    // Regex to capture any html prior to math inline, the math inline (single line), and any html after the math inline
+    const math_inline_within_html_regex = /(?<html_before_math>[\s\S]*?)\$(?<math>.*?)\$(?<html_after_math>(?:(?!\$.*?\$)[\s\S])*)/gm;
+
+    if (enableMathBlockInHtml) {   
+        md.core.ruler.push("math_block_in_html_block", (state) => {
+            return handleMathInHtml(state, "math_block", "$$", math_block_within_html_regex);
+        });
+    }
+
+    if (enableMathInlineInHtml) {    
+        md.core.ruler.push("math_inline_in_html_block", (state) => {
+            return handleMathInHtml(state, "math_inline", "$", math_inline_within_html_regex);
+        });
+    }
 
     md.renderer.rules.math_inline = inlineRenderer;
     md.renderer.rules.math_inline_block = blockRenderer;
