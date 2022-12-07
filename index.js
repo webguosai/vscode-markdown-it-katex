@@ -204,10 +204,12 @@ function blockBareMath(state, start, end, silent) {
 
     const firstLine = state.src.slice(pos, max);
 
-    const beginRe = /^\\begin/;
-    const endRe = /^\\end/;
+    const beginBlockRe = /^\\begin/;
+    const endBlockRe = /^\\end/;
 
-    if (!beginRe.test(firstLine)) { return false; }
+    if (!beginBlockRe.test(firstLine)) {
+        return false;
+    }
 
     if (start > 0) {
         // Previous line must be blank for bare blocks
@@ -219,30 +221,36 @@ function blockBareMath(state, start, end, silent) {
         }
     }
 
-    if (silent) { return true; }
+    if (silent) {
+        return true;
+    }
 
-    let nestingCount = 0;
-    let next;
-    for (next = start; !found;) {
-        next++;
-        if (next >= end) { break; }
+    // Handle Single line code block
+    let next = start
+    if (!/\\end[\{\}\w]*\s*$/.test(firstLine)) {
 
-        pos = state.bMarks[next] + state.tShift[next];
-        max = state.eMarks[next];
+        let nestingCount = 0;
+        for (; !found;) {
+            next++;
+            if (next >= end) { break; }
 
-        if (pos < max && state.tShift[next] < state.blkIndent) {
-            // non-empty line with negative indent should stop the list:
-            break;
-        }
-        const line = state.src.slice(pos, max);
-        if (beginRe.test(line)) {
-            ++nestingCount;
-        } else if (endRe.test(line)) {
-            --nestingCount;
-            if (nestingCount < 0) {
-                const lastPos = max;
-                lastLine = state.src.slice(pos, lastPos);
-                found = true;
+            pos = state.bMarks[next] + state.tShift[next];
+            max = state.eMarks[next];
+
+            if (pos < max && state.tShift[next] < state.blkIndent) {
+                // non-empty line with negative indent should stop the list:
+                break;
+            }
+            const line = state.src.slice(pos, max);
+            if (beginBlockRe.test(line)) {
+                ++nestingCount;
+            } else if (endBlockRe.test(line)) {
+                --nestingCount;
+                if (nestingCount < 0) {
+                    const lastPos = max;
+                    lastLine = state.src.slice(pos, lastPos);
+                    found = true;
+                }
             }
         }
     }
@@ -390,7 +398,7 @@ function handleMathInHtml(state, mathType, mathMarkup, mathRegex) {
             }
 
             if (math) {
-                newTokens.push({ 
+                newTokens.push({
                     ...currentToken,
                     type: mathType,
                     map: null,
@@ -404,13 +412,13 @@ function handleMathInHtml(state, mathType, mathMarkup, mathRegex) {
             if (html_after_math) {
                 newTokens.push({ ...currentToken, type: "html_block", map: null, content: html_after_math });
             }
-        }    
-        
+        }
+
         // Replace the original html_block token with the newly expanded tokens
         if (newTokens.length > 0) {
             tokens.splice(index, 1, ...newTokens);
         }
-    }    
+    }
     return true;
 }
 
@@ -480,13 +488,13 @@ module.exports = function math_plugin(md, options) {
     // Regex to capture any html prior to math inline, the math inline (single line), and any html after the math inline
     const math_inline_within_html_regex = /(?<html_before_math>[\s\S]*?)\$(?<math>.*?)\$(?<html_after_math>(?:(?!\$.*?\$)[\s\S])*)/gm;
 
-    if (enableMathBlockInHtml) {   
+    if (enableMathBlockInHtml) {
         md.core.ruler.push("math_block_in_html_block", (state) => {
             return handleMathInHtml(state, "math_block", "$$", math_block_within_html_regex);
         });
     }
 
-    if (enableMathInlineInHtml) {    
+    if (enableMathInlineInHtml) {
         md.core.ruler.push("math_inline_in_html_block", (state) => {
             return handleMathInHtml(state, "math_inline", "$", math_inline_within_html_regex);
         });
