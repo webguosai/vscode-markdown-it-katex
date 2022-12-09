@@ -115,3 +115,10 @@ middle
 </li>
 </ol>
 .
+
+Should not parse opening $ inside of inline html
+.
+<code>$x</code> `${a}`
+.
+<p><code>$x</code> <code>${a}</code></p>
+.

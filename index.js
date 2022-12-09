@@ -1,16 +1,7 @@
-/* Process inline math */
-/*
-Like markdown-it-simplemath, this is a stripped down, simplified version of:
-https://github.com/runarberg/markdown-it-math
-
-It differs in that it takes (a subset of) LaTeX as input and relies on KaTeX
-for rendering output.
-*/
-
-/*jslint node: true */
+// @ts-check
 'use strict';
 
-var katex = require('katex');
+const katex = require('katex');
 
 /**
  * Test if potential opening or closing delimieter
@@ -80,12 +71,25 @@ function isValidBlockDelim(state, pos) {
     return { can_open: false, can_close: false };
 }
 
+/**
+ * 
+ * @param {import('markdown-it/lib/rules_inline/state_inline')} state 
+ * @param {boolean} silent 
+ */
 function inlineMath(state, silent) {
-    var start, match, token, res, pos, esc_count;
+    if (state.src[state.pos] !== "$") {
+        return false;
+    }
 
-    if (state.src[state.pos] !== "$") { return false; }
+    const lastToken = state.tokens.at(-1);
+    if (lastToken?.type === 'html_inline') {
+        // We may be inside of inside of inline html
+        if (/^<\w+.+[^/]>$/.test(lastToken.content)) {
+            return;
+        }
+    }
 
-    res = isValidInlineDelim(state, state.pos);
+    let res = isValidInlineDelim(state, state.pos);
     if (!res.can_open) {
         if (!silent) { state.pending += "$"; }
         state.pos += 1;
@@ -96,8 +100,9 @@ function inlineMath(state, silent) {
     // This loop will assume that the first leading backtick can not
     // be the first character in state.src, which is known since
     // we have found an opening delimieter already.
-    start = state.pos + 1;
-    match = start;
+    let start = state.pos + 1;
+    let match = start;
+    let pos;
     while ((match = state.src.indexOf("$", match)) !== -1) {
         // Found potential $, look for escapes, pos will point to
         // first non escape when complete
@@ -132,7 +137,7 @@ function inlineMath(state, silent) {
     }
 
     if (!silent) {
-        token = state.push('math_inline', 'math', 0);
+        const token = state.push('math_inline', 'math', 0);
         token.markup = "$";
         token.content = state.src.slice(start, match);
     }
@@ -431,6 +436,10 @@ function escapeHtml(unsafe) {
         .replace(/'/g, "&#039;");
 }
 
+/**
+ * @param {import('markdown-it')} md 
+ * @param {*} options 
+ */
 module.exports = function math_plugin(md, options) {
     // Default options
 
