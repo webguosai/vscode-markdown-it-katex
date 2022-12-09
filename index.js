@@ -209,10 +209,7 @@ function blockBareMath(state, start, end, silent) {
 
     const firstLine = state.src.slice(pos, max);
 
-    const beginBlockRe = /^\\begin/;
-    const endBlockRe = /^\\end/;
-
-    if (!beginBlockRe.test(firstLine)) {
+    if (!/^\\begin/.test(firstLine)) {
         return false;
     }
 
@@ -247,9 +244,9 @@ function blockBareMath(state, start, end, silent) {
                 break;
             }
             const line = state.src.slice(pos, max);
-            if (beginBlockRe.test(line)) {
+            if (/\\begin/.test(line)) {
                 ++nestingCount;
-            } else if (endBlockRe.test(line)) {
+            } else if (/\\end/.test(line)) {
                 --nestingCount;
                 if (nestingCount < 0) {
                     const lastPos = max;
