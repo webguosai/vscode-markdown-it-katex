@@ -8,7 +8,6 @@
     ],
     "scripts": {
         "compile": "tsc -p .",
-        "watch": "watchify browser.js -o bundle.js -v",
         "test": "node test/all.js",
         "test-render": "node test/test-render.js test/test.md > test/out.html"
     },
