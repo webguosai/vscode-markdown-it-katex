@@ -16,7 +16,7 @@ resources:
 
 parameters:
   - name: publishPackage
-    displayName: 🚀 Publish test-web
+    displayName: 🚀 Publish @vscode/markdown-it-katex
     type: boolean
     default: false
 
