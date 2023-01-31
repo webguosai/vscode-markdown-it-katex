@@ -3,6 +3,9 @@
     "version": "1.0.0",
     "description": "Markdown-it plugin that provides VS Code's KaTeX support",
     "main": "index.js",
+    "files": [
+        "index.js"
+    ],
     "scripts": {
         "watch": "watchify browser.js -o bundle.js -v",
         "test": "node test/all.js",
