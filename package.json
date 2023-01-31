@@ -13,7 +13,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+ssh://git@github.com:mjbvz/markdown-it-katex.git"
+        "url": "https://github.com/microsoft/vscode-markdown-it-katex.git"
     },
     "keywords": [
         "markdown",
