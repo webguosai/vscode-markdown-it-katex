@@ -212,7 +212,7 @@ function blockBareMath(state: StateBlock, start: number, end: number, silent: bo
 
     const firstLine = state.src.slice(pos, max);
 
-    if (!/^\\begin/.test(firstLine)) {
+    if (!/^\s*\\begin/.test(firstLine)) {
         return false;
     }
 
@@ -249,14 +249,16 @@ function blockBareMath(state: StateBlock, start: number, end: number, silent: bo
                 break;
             }
             const line = state.src.slice(pos, max);
-            if (/\\begin/.test(line)) {
-                ++nestingCount;
-            } else if (/\\end/.test(line)) {
-                --nestingCount;
-                if (nestingCount < 0) {
-                    const lastPos = max;
-                    lastLine = state.src.slice(pos, lastPos);
-                    found = true;
+            for (const match of line.matchAll(/\\begin|\\end/g)) {
+                if (match[0] === '\\begin') {
+                    ++nestingCount;
+                } else if (match[0] === '\\end') {
+                    --nestingCount;
+                    if (nestingCount < 0) {
+                        const lastPos = max;
+                        lastLine = state.src.slice(pos, lastPos);
+                        found = true;
+                    }
                 }
             }
         }
