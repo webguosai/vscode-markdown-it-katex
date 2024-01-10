@@ -1,10 +1,12 @@
 {
     "name": "@vscode/markdown-it-katex",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Markdown-it plugin that provides VS Code's KaTeX support",
     "main": "dist/index.js",
+    "types": "types.d.ts",
     "files": [
-        "dist/index.js"
+        "dist/index.js",
+        "types.d.ts"
     ],
     "scripts": {
         "compile": "tsc -p .",

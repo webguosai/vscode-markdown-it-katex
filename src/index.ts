@@ -3,6 +3,7 @@ import type * as StateBlock from 'markdown-it/lib/rules_block/state_block';
 import type StateCore from 'markdown-it/lib/rules_core/state_core';
 import type * as StateInline from 'markdown-it/lib/rules_inline/state_inline';
 import type * as Token from 'markdown-it/lib/token';
+import { MarkdownKatexOptions } from '../types';
 
 /**
  * Test if potential opening or closing delimiter
@@ -463,21 +464,17 @@ function escapeHtml(unsafe: string): string {
 }
 
 
-export default function (md: import('markdown-it'), options: any) {
-    // Default options
-
-    options = options || {};
-
-    const enableBareBlocks = options.enableBareBlocks;
-    const enableMathBlockInHtml = options.enableMathBlockInHtml;
-    const enableMathInlineInHtml = options.enableMathInlineInHtml;
+export default function (md: import('markdown-it'), options?: MarkdownKatexOptions) {
+    const enableBareBlocks = options?.enableBareBlocks;
+    const enableMathBlockInHtml = options?.enableMathBlockInHtml;
+    const enableMathInlineInHtml = options?.enableMathInlineInHtml;
 
     const katexInline = (latex: string) => {
         const displayMode = /\\begin\{(align|equation|gather|cd|alignat)\}/ig.test(latex);
         try {
             return katex.renderToString(latex, { ...options, displayMode });
         } catch (error) {
-            if (options.throwOnError) {
+            if (options?.throwOnError) {
                 console.log(error);
             }
             return `<span class="katex-error" title="${escapeHtml(latex)}">${escapeHtml(error + '')}</span>`;
@@ -492,7 +489,7 @@ export default function (md: import('markdown-it'), options: any) {
         try {
             return `<p class="katex-block">${katex.renderToString(latex, { ...options, displayMode: true })}</p>`;
         } catch (error) {
-            if (options.throwOnError) {
+            if (options?.throwOnError) {
                 console.log(error);
             }
             return `<p class="katex-block katex-error" title="${escapeHtml(latex)}">${escapeHtml(error + '')}</p>`;
