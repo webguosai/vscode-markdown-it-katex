@@ -497,7 +497,7 @@ export default function (md: import('markdown-it'), options?: MarkdownKatexOptio
 
 
     md.inline.ruler.after('escape', 'math_inline', inlineMath);
-    md.inline.ruler.after('escape', 'math_inline_block'git , inlineMathBlock);
+    md.inline.ruler.after('escape', 'math_inline_block', inlineMathBlock);
     if (enableBareBlocks) {
         md.inline.ruler.before('text', 'math_inline_bare_block', inlineBareBlock);
     }
