@@ -464,6 +464,42 @@ export default function (md: import('markdown-it'), options?: MarkdownKatexOptio
     const enableMathInlineInHtml = options?.enableMathInlineInHtml;
     const enableFencedBlocks = options?.enableFencedBlocks;
 
+    // #region Parsing
+    md.inline.ruler.after('escape', 'math_inline', inlineMath);
+    md.inline.ruler.after('escape', 'math_inline_block', inlineMathBlock);
+    if (enableBareBlocks) {
+        md.inline.ruler.before('text', 'math_inline_bare_block', inlineBareBlock);
+    }
+
+    md.block.ruler.after('blockquote', 'math_block', (state, start, end, silent) => {
+        if (enableBareBlocks && blockBareMath(state, start, end, silent)) {
+            return true;
+        }
+        return blockMath(state, start, end, silent);
+    }, {
+        alt: ['paragraph', 'reference', 'blockquote', 'list']
+    });
+
+    // Regex to capture any html prior to math block, the math block (single or multi line), and any html after the math block
+    const math_block_within_html_regex = /(?<html_before_math>[\s\S]*?)\$\$(?<math>[\s\S]+?)\$\$(?<html_after_math>(?:(?!\$\$[\s\S]+?\$\$)[\s\S])*)/gm;
+
+    // Regex to capture any html prior to math inline, the math inline (single line), and any html after the math inline
+    const math_inline_within_html_regex = /(?<html_before_math>[\s\S]*?)\$(?<math>.*?)\$(?<html_after_math>(?:(?!\$.*?\$)[\s\S])*)/gm;
+
+    if (enableMathBlockInHtml) {
+        md.core.ruler.push("math_block_in_html_block", (state) => {
+            return handleMathInHtml(state, "math_block", "$$", math_block_within_html_regex);
+        });
+    }
+
+    if (enableMathInlineInHtml) {
+        md.core.ruler.push("math_inline_in_html_block", (state) => {
+            return handleMathInHtml(state, "math_inline", "$", math_inline_within_html_regex);
+        });
+    }
+    // #endregion
+
+    // #region Rendering
     const katexInline = (latex: string) => {
         const displayMode = /\\begin\{(align|equation|gather|cd|alignat)\}/ig.test(latex);
         try {
@@ -495,52 +531,24 @@ export default function (md: import('markdown-it'), options?: MarkdownKatexOptio
         return katexBlockRenderer(tokens[idx].content) + '\n';
     }
 
-
-    md.inline.ruler.after('escape', 'math_inline', inlineMath);
-    md.inline.ruler.after('escape', 'math_inline_block', inlineMathBlock);
-    if (enableBareBlocks) {
-        md.inline.ruler.before('text', 'math_inline_bare_block', inlineBareBlock);
-    }
-
-    md.block.ruler.after('blockquote', 'math_block', (state, start, end, silent) => {
-        if (enableBareBlocks && blockBareMath(state, start, end, silent)) {
-            return true;
-        }
-        return blockMath(state, start, end, silent);
-    }, {
-        alt: ['paragraph', 'reference', 'blockquote', 'list']
-    });
-
-    const originalFenceRenderer = md.renderer.rules.fence;
-    md.renderer.rules.fence = function (tokens: Token[], idx: number, options, env, self) {
-        const token = tokens[idx];
-        if (token.info.trim() === 'math' && enableFencedBlocks) {
-            return blockRenderer([token], 0);
-        } else {
-            return originalFenceRenderer?.call(this, tokens, idx, options, env, self) || '';
-        }
-    };
-
-    // Regex to capture any html prior to math block, the math block (single or multi line), and any html after the math block
-    const math_block_within_html_regex = /(?<html_before_math>[\s\S]*?)\$\$(?<math>[\s\S]+?)\$\$(?<html_after_math>(?:(?!\$\$[\s\S]+?\$\$)[\s\S])*)/gm;
-
-    // Regex to capture any html prior to math inline, the math inline (single line), and any html after the math inline
-    const math_inline_within_html_regex = /(?<html_before_math>[\s\S]*?)\$(?<math>.*?)\$(?<html_after_math>(?:(?!\$.*?\$)[\s\S])*)/gm;
-
-    if (enableMathBlockInHtml) {
-        md.core.ruler.push("math_block_in_html_block", (state) => {
-            return handleMathInHtml(state, "math_block", "$$", math_block_within_html_regex);
-        });
-    }
-
-    if (enableMathInlineInHtml) {
-        md.core.ruler.push("math_inline_in_html_block", (state) => {
-            return handleMathInHtml(state, "math_inline", "$", math_inline_within_html_regex);
-        });
-    }
-
     md.renderer.rules.math_inline = inlineRenderer;
     md.renderer.rules.math_inline_block = blockRenderer;
     md.renderer.rules.math_inline_bare_block = blockRenderer;
     md.renderer.rules.math_block = blockRenderer;
+
+    if (enableFencedBlocks) {
+        const mathLanguageId = 'math';
+
+        const originalFenceRenderer = md.renderer.rules.fence;
+        md.renderer.rules.fence = function (tokens: Token[], idx: number, options, env, self) {
+            const token = tokens[idx];
+            if (token.info.trim().toLowerCase() === mathLanguageId && enableFencedBlocks) {
+                return katexBlockRenderer(token.content) + '\n';
+            } else {
+                return originalFenceRenderer?.call(this, tokens, idx, options, env, self) || '';
+            }
+        };
+    }
+
+    // #endregion
 };
