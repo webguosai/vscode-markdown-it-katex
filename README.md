@@ -80,6 +80,21 @@ $$\begin{array}{c}
 \end{array}$$
 ```
 
+### Katex extension
+```tsx
+import MarkdownIt from 'markdown-it'
+import katex from 'katex'
+import 'katex/contrib/mhchem'
+import 'katex/contrib/copy-tex'
+const md = new MarkdownIt()
+katexPlugin(md, {
+    katex,
+})
+
+const result = md.render('# Math Rulez! \n  $\\sqrt{3x-1}+(1+x)^2$');
+const chemResult = md.render('$\\ce{Hg^2+ ->[I-] HgI2 ->[I-] [Hg^{II}I4]^2-}$')
+```
+
 ## Syntax
 
 Math parsing in markdown is designed to agree with the conventions set by pandoc:
