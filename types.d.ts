@@ -1,4 +1,5 @@
 import type MarkdownIt from 'markdown-it';
+import Katex from "katex"
 
 export interface MarkdownKatexOptions {
     /**
@@ -31,6 +32,11 @@ export interface MarkdownKatexOptions {
      * Controls if an exception is thrown on katex errors.
      */
     readonly throwOnError?: boolean;
+
+    /**
+     * Support for custom katex instance for extension such as mhchem 
+     */
+    katex?: typeof Katex
 }
 
 export default function (md: MarkdownIt, options?: MarkdownKatexOptions): MarkdownIt;
