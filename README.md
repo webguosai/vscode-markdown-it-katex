@@ -1,10 +1,6 @@
 # Markdown-it Katex
 
-Markdown it plugin that adds [KaTeX](https://github.com/Khan/KaTeX) rendering. This is used by VS Code to render math in markdown.
-
-Need convincing?
-
-* Check out the comparative benchmark: [KaTeX vs MathJax](https://jsperf.com/katex-vs-mathjax/42)
+Markdown It plugin that adds [KaTeX](https://github.com/Khan/KaTeX) rendering. This is used by VS Code to render math in Markdown.
 
 Originally forked from [@iktakahiro/markdown-it-katex](https://github.com/iktakahiro/markdown-it-katex)
 
