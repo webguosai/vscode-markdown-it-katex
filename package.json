@@ -11,6 +11,7 @@
     "scripts": {
         "compile": "tsc -p .",
         "browser": "browserify dist/index.js -o dist/browser.js",
+        "min": "npx uglifyjs dist/browser.js -o dist/browser.min.js -c -m",
         "watch": "tsc -p . -watch",
         "test": "node test/all.js",
         "test-render": "node test/test-render.js test/test.md > test/out.html"

@@ -6,15 +6,19 @@
 
 ```bash
 npm install browserify -g
+npm install --save-dev uglify-js -g
 
 # ts 转 js
-npm run compile 
+npm run compile
 
 # js 打包为浏览器能识别的js 
-npm run browser 
+npm run browser
+
+# 压缩js
+npm run min
 
 # 这就是打包好的js
-dist/browser.js
+dist/browser.min.js
 ```
 
 浏览器调用
