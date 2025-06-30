@@ -1,4 +1,6 @@
 import localKatex from 'katex';
+// 化学公式支持
+import 'katex/dist/contrib/mhchem'
 import type * as StateBlock from 'markdown-it/lib/rules_block/state_block';
 import type StateCore from 'markdown-it/lib/rules_core/state_core';
 import type * as StateInline from 'markdown-it/lib/rules_inline/state_inline';
@@ -457,8 +459,13 @@ function escapeHtml(unsafe: string): string {
         .replace(/'/g, "&#039;");
 }
 
+declare global {
+    interface Window {
+        vscodeMarkdownitKatex: any;
+    }
+}
 
-export default function (md: import('markdown-it'), options?: MarkdownKatexOptions) {
+export default window.vscodeMarkdownitKatex = function (md: import('markdown-it'), options?: MarkdownKatexOptions) {
     const katex = options?.katex ?? localKatex;
     const enableBareBlocks = options?.enableBareBlocks;
     const enableMathBlockInHtml = options?.enableMathBlockInHtml;

@@ -10,6 +10,7 @@
     ],
     "scripts": {
         "compile": "tsc -p .",
+        "browser": "browserify dist/index.js -o dist/browser.js",
         "watch": "tsc -p . -watch",
         "test": "node test/all.js",
         "test-render": "node test/test-render.js test/test.md > test/out.html"
